@@ -7,9 +7,11 @@ def fetchDrawDates(game):
     drawDateList = []
 
     for tarih in data:
-        drawDateList.append(tarih.get("tarih"))
+        drawDateList.append(tarih.get("tarih")) # tarih değişkeni çıkartılıp listeye ekleniyor.
 
-    drawDateList.reverse()
+    drawDateList.reverse() 
+    # son görülme fonksiyonunu düzgün biçimde elde edebilmek için list ters çevrilmekte.
+    # bunun sebebi, listedeki ilk elemanın en yakın çekiliş tarihi olmasıdır.
     return drawDateList
 
 
@@ -19,10 +21,12 @@ def fetchDraw(game, date):
     try:
         response = urllib.request.urlopen(url)
     except urllib.error.HTTPError as e:
-        # Return code error (e.g. 404, 501, ...)
+        # Return code error (Örn. 404, 501, ...)
         # ...
         print('HTTPError: {}'.format(e.code))
         try:
+            # 404 hatası alınması halinde sayısal'ı deneme sebebi, bazı verilerin '../sayisal/01012018' gibi linklerde,
+            # bazılarının ise '../sayisal/SAY_01012018' gibi linklerde saklanmasıdır. if condition eklenebilir.
                 response = urllib.request.urlopen("http://www.millipiyango.gov.tr/sonuclar/cekilisler/sayisal/SAY_{}.json".format(date))
         except urllib.error.HTTPError as e:
                 # Return code error (e.g. 404, 501, ...)
@@ -33,9 +37,8 @@ def fetchDraw(game, date):
                 # ...
                 print('URLError: {}'.format(e.reason))
         else:
-                # 200
-                 # ...
-                print('good')
+                # 200 - BAŞARILI
+                # ...
                 data = json.load(response)
                 return data.get('data').get('rakamlar')
     except urllib.error.URLError as e:
@@ -43,27 +46,30 @@ def fetchDraw(game, date):
         # ...
         print('URLError: {}'.format(e.reason))
     else:
-        # 200
+        # 200 - BAŞARILI
         # ...
         data = json.load(response)
         return data.get('data').get('rakamlar')
+    #Json dosyası üzerinden sadece şanslı numaralar döndürüldü.
 
 
 def calcSuperStatistics():
         superArr = [0,71,59,53,68,61,53,52,51,56,58,50,58,78,62,57,53,66,63,63,62,58,64,65,55,52,57,51,50,63,53,60,53,67,59,80,63,76,54,58,60,62,48,64,51,69,62,64,55,58,59,55,43,50,60]
         lastSeen = [0] * 55
-        for date in fetchDrawDates("superloto"):
-            results = fetchDraw("superloto", date)
-            result = results.split('#')
-            for i in range(55):
-                lastSeen[i] = lastSeen[i]+1
+        for date in fetchDrawDates("superloto"): # ilgili oyuna ait tarihleri çekiliyor
+            results = fetchDraw("superloto", date) #her bir tarih için sırasıyla sonuçlar yükleniyor.
+            result = results.split('#') # json dosyası üzerinde numalara '#' karakteriyle birbirinden ayrılıyor
+            for i in range(55): 
+                lastSeen[i] = lastSeen[i]+1 # Her sayının son görülmesi bir hafta arttırılıyor.
             
             for res in result:
-                superArr[int(res)] = superArr[int(res)]+1
-                lastSeen[int(res)] = 0
+                superArr[int(res)] = superArr[int(res)]+1 # sonuçlardaki numaranın indexine 1 ekleniyor.
+                lastSeen[int(res)] = 0 # aynı zamanda son görülmesi sıfırlanıyor.
            
             
-        createJson("superloto",superArr,lastSeen)
+        createJson("superloto",superArr,lastSeen) #json dosyasını üretmek üzere fonksiyon çalıştırılıyor.
+        
+        #Tüm algoritma sabittir, şans topu için ayrıca inceleyiniz.
         
     
 
@@ -105,6 +111,9 @@ def calcSansStatistics():
         topArr = [0,55,65,51,61,59,80,59,55,53,74,59,74,60,59]
         sansLastSeen = [0] * 35
         topLastSeen = [0] * 15
+        # Şans topunda, şans topunun ve diğer 5 rakamın istatistikleri ayrı tutulmuştur.
+        # Tek bir fonksiyon içerisinde, iki ayrı işlem gerçekleştirilmektedir.
+        
         for date in fetchDrawDates("sanstopu"):
                 results = fetchDraw("sanstopu", date)
                 result = results.split('#')
@@ -113,7 +122,7 @@ def calcSansStatistics():
                 for i in range(15):
                         topLastSeen[i] = topLastSeen[i]+1
                 for index, res in enumerate(result):
-                    if(index==5):
+                    if(index==5): ## Eğer sonuç içerisindeki son top ise, şans topu olduğunu anlıyoruz. 
                         topArr[int(res)] = topArr[int(res)]+1
                         topLastSeen[int(res)] = 0
                     else:
@@ -138,5 +147,7 @@ def createJson(game, frequency, lastSeen):
         jsonFile.write(json.dumps(x))
         jsonFile.close()
 
-        
+#calcSansStatistics()
 calcSuperStatistics()
+#calcSayisalStatistics()
+#calcOnNumStatistics()
